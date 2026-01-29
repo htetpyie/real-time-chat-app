@@ -1,5 +1,5 @@
 using ChatApp.Server.Features.AuthFeature;
-using ChatApp.Server.Middleware;
+using ChatApp.Server.Filters.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -98,7 +98,7 @@ builder.Services.AddSwaggerGen(options =>
             });
 });
 #endregion
-
+builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.Configure<AppSettingModel>(builder.Configuration);

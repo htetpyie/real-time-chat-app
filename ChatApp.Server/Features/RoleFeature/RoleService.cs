@@ -12,11 +12,11 @@ public class RoleService : IRoleService
     public async Task<string> GetRoleIdByUser(string userId)
     {
         var query = from role in _context.Roles
-                     join user in _context.Users on role.Id equals user.RoleId
-                     where user.UserId == userId &&
-                         user.IsDelete == false &&
-                         role.IsDelete == false
-                     select role.RoleId;
+                    join user in _context.Users on role.Id equals user.RoleId
+                    where user.UserId == userId &&
+                        user.IsDelete == false &&
+                        role.IsDelete == false
+                    select role.RoleId;
         return await query.FirstOrDefaultAsync() ?? string.Empty;
     }
 
@@ -24,8 +24,33 @@ public class RoleService : IRoleService
     {
         return await _context.Roles
             .AsNoTracking()
-            .Where(x => x.Name.ToLower().Trim() == ConstantRoleName.User.ToLower() && x.IsDelete == false)
+            .Where(x =>
+                x.Name.ToLower().Trim() == ConstantRoleName.User.ToLower() &&
+                x.IsDelete == false)
             .Select(x => x.Id)
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<int> GetAdminRoleId()
+    {
+        return await _context.Roles
+            .AsNoTracking()
+            .Where(x =>
+                x.Name.ToLower().Trim() == ConstantRoleName.Admin.ToLower() &&
+                x.IsDelete == false)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<bool> IsAdminRoleAsync(string roleId)
+    {
+        var role = await _context.Roles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.RoleId == roleId &&
+                x.Name == ConstantRoleName.Admin &&
+                x.IsDelete == false);
+
+        return role != null;
     }
 }

@@ -4,3 +4,4 @@ global using FluentValidation;
 global using Shared.Constants;
 global using ChatApp.Server.Features.RoleFeature;
 global using Shared;
+global using ChatApp.Server.Filters.AuthorizeFilter;

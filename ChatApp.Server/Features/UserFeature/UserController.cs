@@ -10,6 +10,7 @@ namespace ChatApp.Server.Features.UserFeature
     {
         [HttpGet("Testing")]
         [Authorize]
+        [AdminAuthorize]
         public IActionResult Test()
         {
             return Ok("Valid Token");

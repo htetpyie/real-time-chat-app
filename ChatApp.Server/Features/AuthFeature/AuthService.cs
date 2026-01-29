@@ -103,7 +103,9 @@ public class AuthService : IAuthService
     {
         var saltKey = Extensions.GenerateSalt();
         var hashedPassword = request.Password!.HashPassword(saltKey);
-        var userRoleId = await _rolService.GetUserRoleId();
+        var userRoleId = request.IsAdmin 
+            ? await _rolService.GetAdminRoleId()
+            : await _rolService.GetUserRoleId();
 
         var user = new User
         {
@@ -119,7 +121,7 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
         return user.UserId;
     }
-
+    
     private async Task<bool> IsUserExist(RegisterRequestModel request)
     {
         return await _context.Users

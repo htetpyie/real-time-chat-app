@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 
-namespace ChatApp.Server.Middleware;
+namespace ChatApp.Server.Filters.Middleware;
 
 public class ExceptionMiddleware : IExceptionHandler
 {
