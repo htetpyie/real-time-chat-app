@@ -59,6 +59,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IsDelete).HasDefaultValueSql("'0'");
             entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.RoleId).HasMaxLength(45);
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -67,15 +68,11 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("user");
 
-            entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.Email).HasMaxLength(50);
-            entity.Property(e => e.FullName).HasMaxLength(200);
             entity.Property(e => e.IsDelete).HasDefaultValueSql("'0'");
             entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
-            entity.Property(e => e.Password).HasMaxLength(512);
-            entity.Property(e => e.PhoneNo).HasMaxLength(50);
-            entity.Property(e => e.SaltKey).HasMaxLength(512);
+            entity.Property(e => e.Password).HasMaxLength(255);
+            entity.Property(e => e.SaltKey).HasMaxLength(255);
             entity.Property(e => e.UserId).HasMaxLength(50);
             entity.Property(e => e.UserName).HasMaxLength(200);
         });

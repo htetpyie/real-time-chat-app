@@ -1,51 +1,151 @@
-﻿using ChatApp.Database.AppDbContextModels;
+﻿using ChatApp.Server.Features.UserFeature;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Shared.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Shared;
 
 namespace ChatApp.Server.Features.AuthFeature;
 
-public class AuthService
+public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
+    private readonly AppSettingModel _setting;
+    private readonly IRoleService _rolService;
 
-    public AuthService(AppDbContext context)
+    public AuthService(AppDbContext context,
+        IOptionsMonitor<AppSettingModel> setting,
+        IRoleService rolService)
     {
         _context = context;
+        _setting = setting.CurrentValue;
+        _rolService = rolService;
     }
 
-    //public async Task<bool> AuthenticateAsync(AuthenticationViewModel model)
-    //{
-    //    if (model is null) return false;
+    public async Task<ResponseModel<LoginResponseModel>> LoginAsync(LoginRequestModel request)
+    {
+        try
+        {
+            if (request is null || request.UserName.IsNullOrWhiteSpace() || request.Password.IsNullOrWhiteSpace())
+                return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.UserNameAndPasswordIsRequired);
 
-    //    var user = await _context
-    //        .Users
-    //        .AsNoTracking()
-    //        .FirstOrDefaultAsync(x => x.UserName == model.UserName.ToLower() && x.IsDelete == false);
+            var loginResponse = await AuthenticateAsync(request);
+            return loginResponse;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 
-    //    if (user == null) return false;
+    public async Task<ResponseModel<RegisterResponseModel>> RegisterAsync(RegisterRequestModel request)
+    {
+        try
+        {
+            if (request is null
+            || request.UserName.IsNullOrWhiteSpace()
+            || request.Password.IsNullOrWhiteSpace())
+                return ResponseHelper.BadRequest<RegisterResponseModel>();
 
-    //    bool isPasswordValid = _baseService.VerifyPasswordHash(model.Password, user.Password, user.SaltKey);
+            if (await IsUserExist(request))
+                return ResponseHelper.BadRequest<RegisterResponseModel>(
+                    ConstantResponseMessage.UserNameExisted);
 
-    //    return isPasswordValid;
-    //}
+            var userId = await SaveUser(request);
+            return ResponseHelper.Success<RegisterResponseModel>(
+                new RegisterResponseModel { UserId = userId },
+                ConstantResponseMessage.RegisterSuccessfully);
+        }
+        catch (Exception)
+        {
+            throw;
+        }
 
-    //public async Task<UserViewModel> GetLoginDataByUserNameAsync(string userName)
-    //{
+    }
 
-    //    var user = await (from u in _context.Users
-    //               join r in _context.Roles on u.RoleId equals r.Id
-    //               where u.UserName.ToLower() == userName &&
-    //               u.IsDelete == false &&
-    //               r.IsDelete == false
-    //               select new UserViewModel
-    //               {
-    //                   UserName = u.UserName,
-    //                   FullName = u.FullName,
-    //                   Id = u.Id,
-    //                   RoleId = u.RoleId,
-    //                   RoleName = r.Name,
-    //                   IsSystemDefinedRole = r.IsSystemDefined,
-    //               })
-    //               .FirstOrDefaultAsync();
+    private async Task<ResponseModel<LoginResponseModel>> AuthenticateAsync(LoginRequestModel request)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.UserName == request.UserName!.ToLower() &&
+                x.IsDelete == false);
 
-    //    return user;
-    //}        
+        if (user == null)
+            return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.UserNotFound);
+
+        var validPassword = request.Password!.VerifyPassword(user.Password, user.SaltKey);
+
+        if (!validPassword)
+            return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.InvalidCredential);
+
+        var roleId = await _rolService.GetRoleIdByUser(user.UserId);
+        if (roleId.IsNullOrWhiteSpace())
+            return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.RoleNotFound);
+
+        return ResponseHelper.Success(
+            new LoginResponseModel
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Token = GenerateJWTToken(new UserModel
+                {
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    RoleId = roleId,
+                })
+            });
+    }
+
+    private async Task<string> SaveUser(RegisterRequestModel request)
+    {
+        var saltKey = Extensions.GenerateSalt();
+        var hashedPassword = request.Password!.HashPassword(saltKey);
+        var userRoleId = await _rolService.GetUserRoleId();
+
+        var user = new User
+        {
+            UserName = request.UserName!.ToLower(),
+            Password = hashedPassword,
+            UserId = Guid.NewGuid().ToString(),
+            SaltKey = saltKey,
+            RoleId = userRoleId,
+            CreatedDate = DateTime.Now.ToMyanmarDateTime(),
+        };
+
+        await _context.Users.AddAsync(user);
+        await _context.SaveChangesAsync();
+        return user.UserId;
+    }
+
+    private async Task<bool> IsUserExist(RegisterRequestModel request)
+    {
+        return await _context.Users
+            .AnyAsync(x => x.UserName.Trim().ToLower() == request.UserName!.Trim().ToLower() && x.IsDelete == false);
+    }
+
+    private string GenerateJWTToken(UserModel data)
+    {
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_setting.JwtSetting.Key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ConstantClaimCode.UserId, data.UserId),
+            new Claim(ConstantClaimCode.UserName, data.UserName),
+            new Claim(ConstantClaimCode.RoleId, data.RoleId),
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _setting.JwtSetting.Issuer,
+            audience: _setting.JwtSetting.Audience,
+            claims: claims,
+            expires: DateTime.Now.AddMinutes(_setting.JwtSetting.TokenMinute),
+            notBefore: DateTime.Now,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }

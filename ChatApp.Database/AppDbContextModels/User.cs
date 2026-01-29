@@ -11,19 +11,9 @@ public partial class User
 
     public string UserName { get; set; } = null!;
 
-    public string FullName { get; set; } = null!;
+    public string SaltKey { get; set; } = null!;
 
-    public string Email { get; set; } = null!;
-
-    public string? PhoneNo { get; set; }
-
-    public int GenderId { get; set; }
-
-    public byte[] SaltKey { get; set; } = null!;
-
-    public byte[] Password { get; set; } = null!;
-
-    public string? Address { get; set; }
+    public string Password { get; set; } = null!;
 
     public int RoleId { get; set; }
 
