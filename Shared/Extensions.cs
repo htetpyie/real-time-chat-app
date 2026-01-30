@@ -35,6 +35,17 @@ public static class Extensions
         return true;
     }
 
+    public static string ToDateTimeString(this DateTime? date)
+    {
+        if (date is null) return string.Empty;
+        return date?.ToString("yyyy/MM/dd HH:mm:ss");
+    }
+
+    public static string ToDateTimeString(this DateTime date)
+    {
+        return date.ToString("yyyy/MM/dd HH:mm:ss");
+    }
+
     public static string GenerateSalt(int size = 22)
     {
         byte[] saltBytes = new byte[size];

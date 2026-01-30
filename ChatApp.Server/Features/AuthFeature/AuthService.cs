@@ -94,7 +94,6 @@ public class AuthService : IAuthService
                 Token = GenerateJWTToken(new UserModel
                 {
                     UserId = user.UserId,
-                    UserName = user.UserName,
                     RoleId = role.RoleId,
                 })
             });
@@ -137,7 +136,6 @@ public class AuthService : IAuthService
         var claims = new[]
         {
             new Claim(ConstantClaimCode.UserId, data.UserId),
-            new Claim(ConstantClaimCode.UserName, data.UserName),
             new Claim(ConstantClaimCode.RoleId, data.RoleId),
         };
 

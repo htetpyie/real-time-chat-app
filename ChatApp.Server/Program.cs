@@ -1,4 +1,6 @@
 using ChatApp.Server.Features.AuthFeature;
+using ChatApp.Server.Features.ChatFeature;
+using ChatApp.Server.Features.TokenFeature;
 using ChatApp.Server.Filters.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -126,6 +128,9 @@ builder.Services.AddProblemDetails();
 #region Injections
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+
 #endregion
 
 var app = builder.Build();

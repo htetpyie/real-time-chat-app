@@ -8,4 +8,5 @@ public class ConstantResponseMessage
     public const string RoleNotFound = "User role is not found.";
     public const string UserNameExisted = "Username is already existed.";
     public const string RegisterSuccessfully = "Registration is successful. Please login using your account.";
+    public const string MessageTooLong = "Message is too long.Maximum count is 450.";
 }

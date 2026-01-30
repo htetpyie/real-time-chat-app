@@ -22,7 +22,7 @@ const Register: React.FC = () => {
     const [success, setSuccess] = useState("");
 
     const handleRegister = async () => {
-        setError(""); // reset error
+        setError("");
         try {
             const res = await registerApi({ username, password });
 

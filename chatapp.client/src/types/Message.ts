@@ -3,6 +3,6 @@ export interface Message {
     senderId: number;
     receiverId: number;
     content: string;
-    sentAt: string;
+    sentDate: string;
     isRead: boolean;
 }

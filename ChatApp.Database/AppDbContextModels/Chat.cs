@@ -3,15 +3,15 @@ using System.Collections.Generic;
 
 namespace ChatApp.Database.AppDbContextModels;
 
-public partial class Message
+public partial class Chat
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
 
-    public int SenderId { get; set; }
+    public string SenderId { get; set; } = null!;
 
-    public int? ReceiverId { get; set; }
+    public string? ReceiverId { get; set; }
 
-    public string? Content { get; set; }
+    public string? Message { get; set; }
 
     public DateTime? SentDate { get; set; }
 

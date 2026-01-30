@@ -4,16 +4,3 @@ export interface AuthData {
     isAdmin: boolean;
     token: string;
 }
-
-export interface AuthResponse {
-    responseCode: number;
-    message: string;
-    data: AuthData;
-    isSuccess: boolean;
-}
-
-export interface RegisterResponse {
-    responseCode: number;
-    message: string;
-    isSuccess: boolean;
-}
