@@ -98,6 +98,22 @@ builder.Services.AddSwaggerGen(options =>
             });
 });
 #endregion
+
+#region CORS Ploicy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy =>
+        {
+            policy
+                .WithOrigins("http://localhost:5173", "http://localhost:5000")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+#endregion
+
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
@@ -127,6 +143,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseExceptionHandler();
+
+app.UseCors("AllowReactApp");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
