@@ -18,7 +18,7 @@ public class ChatService : IChatService
     {
         try
         {
-            var query = GetUserListQuery();
+            var query = await GetUserListQueryAsync();
             var userList = await query.Distinct().ToListAsync();
             return ResponseHelper.Success(userList ?? new());
 
@@ -107,19 +107,46 @@ public class ChatService : IChatService
                         SenderId = chat.SenderId,
                         ReceiverId = chat.ReceiverId,
                         SentDate = chat.SentDate,
+                        IsRead = chat.IsRead ?? false,
                     };
 
         return query;
     }
 
-    private IQueryable<ChatUserModel> GetUserListQuery()
+    private async Task<IQueryable<ChatUserModel>> GetUserListQueryAsync()
     {
+
+        var isAdmin = await _tokenService.IsAdmin();
+        var tokenUserId = _tokenService.UserId;
+
+        if (!isAdmin)
+        {
+            return from user in _context.Users
+                   join chat in _context.Chats on user.UserId equals chat.SenderId
+                   join role in _context.Roles on user.RoleId equals role.Id
+
+                   where role.Name == ConstantRoleName.Admin &&
+                    (chat.SenderId == tokenUserId || chat.ReceiverId == tokenUserId) &&
+                    user.IsDelete == false &&
+                    chat.IsDelete == false &&
+                    role.IsDelete == false
+
+                   orderby chat.SentDate descending
+
+                   select new ChatUserModel
+                   {
+                       UserId = user.UserId,
+                       UserName = user.UserName,
+                       LastMessage = chat.Message,
+                   };
+        }
+
         var query = from user in _context.Users
                     join chat in _context.Chats on user.UserId equals chat.SenderId
                     join role in _context.Roles on user.RoleId equals role.Id
 
                     where role.Name != ConstantRoleName.Admin &&
-                     chat.SenderId == user.UserId &&
+                     (chat.SenderId == user.UserId || chat.ReceiverId == user.UserId) &&
                      user.IsDelete == false &&
                      chat.IsDelete == false &&
                      role.IsDelete == false
@@ -130,7 +157,7 @@ public class ChatService : IChatService
                     {
                         UserId = user.UserId,
                         UserName = user.UserName,
-                        LastMessage = chat.Message
+                        LastMessage = chat.Message,
                     };
 
         return query;

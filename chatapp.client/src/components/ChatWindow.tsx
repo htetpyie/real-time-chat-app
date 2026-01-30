@@ -1,82 +1,76 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
-import { startConnection, sendToAdmin, sendToUser } from "../services/signalrService";
-import { ConnectionStatus } from "./ConnectionStatus";
-import { MessageItem } from "./MessageItem";
-import { AuthContext } from "../context/AuthContext";
-import { getHistory } from "../api/chatApi";
+import { Box, TextField, Button, Paper, Typography, Stack } from "@mui/material";
 import type { Message } from "../types/Message";
+import { AuthContext } from "../context/AuthContext";
+import { startConnection, sendToAdmin, sendToUser } from "../services/signalrService";
+import { getHistory } from "../api/chatApi";
+import { ConnectionStatus } from "./ConnectionStatus";
 
 interface ChatWindowProps {
+    selectedUserId: string | null;
     isAdmin: boolean;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ isAdmin }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ selectedUserId, isAdmin }) => {
     const { user } = useContext(AuthContext)!;
     const [messages, setMessages] = useState<Message[]>([]);
     const [status, setStatus] = useState("Connecting");
     const [message, setMessage] = useState("");
-    const [page, setPage] = useState(1);
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    // Load chat history
-    const loadHistory = async () => {
-        if (!user) return;
-        try {
-            const history = await getHistory(user.userId, page);
-            setMessages(prev => [...history, ...prev]); // prepend older messages
-        } catch (err: any) {
-            console.error("Failed to load history:", err.message);
-        }
-    };
-
-    // Start SignalR
     useEffect(() => {
         if (!user) return;
+        startConnection(user.token, (msg: Message) => setMessages(prev => [...prev, msg]), setStatus);
+    }, [user]);
 
-        startConnection(user.token, (msg: Message) => {
-            setMessages(prev => [...prev, msg]); // append new message
-        }, setStatus);
-
+    useEffect(() => {
+        if (!user || !selectedUserId) return;
+        const loadHistory = async () => {
+            try {
+                const history = await getHistory(selectedUserId);
+                setMessages(history);
+            } catch (err) {
+                console.error(err);
+            }
+        };
         loadHistory();
-    }, []);
+    }, [selectedUserId]);
 
-    // Auto scroll to bottom
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Send message
     const send = async () => {
-        if (!message.trim() || status !== "Connected") return;
+        if (!message.trim() || !selectedUserId) return;
+        if (status !== "Connected") return;
 
         try {
-            if (isAdmin) {
-                await sendToUser("1", message); // TODO: replace "1" with selected userId
-            } else {
-                await sendToAdmin(message);
-            }
+            if (isAdmin) await sendToUser(selectedUserId, message);
+            else await sendToAdmin(message);
             setMessage("");
         } catch (err) {
-            console.error("Send message error:", err);
+            console.error(err);
         }
     };
 
     return (
-        <div>
+        <Paper sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column" }}>
             <ConnectionStatus status={status} />
-            <div style={{ height: "400px", overflowY: "auto", border: "1px solid #ccc", padding: "5px" }}>
+            <Box sx={{ flex: 1, overflowY: "auto", mb: 1 }}>
                 {messages.map((m, i) => (
-                    <MessageItem key={i} message={m} currentUserId={user.userId} />
+                    <Box key={i} sx={{ display: "flex", justifyContent: m.senderId === user?.userId? "flex-end" : "flex-start", mb: 1 }}>
+                        <Paper sx={{ p: 1.5, maxWidth: "70%" }}>
+                            <Typography variant="body1">{m.message}</Typography>
+                            <Typography variant="caption" sx={{ float: "right" }}>{m.sentDateString}</Typography>
+                        </Paper>
+                    </Box>
                 ))}
-                <div ref={bottomRef} />
-            </div>
-            <input
-                placeholder="Type your message"
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                disabled={status !== "Connected"}
-            />
-            <button onClick={send} disabled={status !== "Connected" || !message.trim()}>Send</button>
-        </div>
+                <div ref={bottomRef}></div>
+            </Box>
+            <Stack direction="row" spacing={1}>
+                <TextField fullWidth value={message} onChange={e => setMessage(e.target.value)} disabled={status !== "Connected"} />
+                <Button variant="contained" onClick={send} disabled={status !== "Connected" || !message.trim()}>Send</Button>
+            </Stack>
+        </Paper>
     );
 };

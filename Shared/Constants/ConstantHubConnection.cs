@@ -8,5 +8,5 @@ namespace Shared.Constants;
 
 public class ConstantHubConnection
 {
-    public const string ChatHub = "";
+    public const string ChatHub = "/chatHub";
 }

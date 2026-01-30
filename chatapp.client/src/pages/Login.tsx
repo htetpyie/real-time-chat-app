@@ -27,9 +27,7 @@ const Login: React.FC = () => {
 
             if (res.data.isSuccess && res.data.data) {
                 login(res.data.data);
-
-                if (res.data.data.isAdmin) navigate("/admin-chat");
-                else navigate("/chat");
+                 navigate("/");
             } else {
                 setError(res.data.message || "Login failed");
             }

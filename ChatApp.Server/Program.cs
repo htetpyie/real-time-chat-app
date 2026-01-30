@@ -2,6 +2,7 @@ using ChatApp.Server.Features.AuthFeature;
 using ChatApp.Server.Features.ChatFeature;
 using ChatApp.Server.Features.TokenFeature;
 using ChatApp.Server.Filters.Middleware;
+using ChatApp.Server.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -26,6 +27,11 @@ builder.Services.AddSwaggerGen();
 string dbConnection = builder.Configuration.GetConnectionString("MYSQLDBConnection")!;
 builder.Services.AddDbContext<AppDbContext>(
     options => options.UseMySql(dbConnection, ServerVersion.AutoDetect(dbConnection)));
+#endregion
+
+
+#region Signal R
+builder.Services.AddSignalR();
 #endregion
 
 #region JWT
@@ -154,5 +160,6 @@ app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>(ConstantHubConnection.ChatHub);
 
 app.Run();

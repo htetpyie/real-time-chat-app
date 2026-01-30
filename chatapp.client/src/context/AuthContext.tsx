@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
+﻿import React, { createContext, useEffect, useState } from "react";
 import type { AuthData } from "../types/AuthResponse";
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthData | null>(null);
+    const [loading, setLoading] = useState(true); 
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -21,6 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (token && userId && userName) {
             setUser({ token, userId, userName, isAdmin });
         }
+        setLoading(false);
     }, []);
 
     const login = (data: AuthData) => {

@@ -23,6 +23,7 @@ const Register: React.FC = () => {
 
     const handleRegister = async () => {
         setError("");
+        setSuccess("");
         try {
             const res = await registerApi({ username, password });
 
@@ -81,7 +82,7 @@ const Register: React.FC = () => {
                     </Button>
 
                     {error && <Alert severity="error">{error}</Alert>}
-                    {success && <Alert severity="success">{success} </Alert>}
+                    {!error && success && <Alert severity="success">{success} </Alert>}
 
                 </Box>
 

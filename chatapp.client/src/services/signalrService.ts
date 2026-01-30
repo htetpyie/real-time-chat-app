@@ -8,11 +8,10 @@ type StatusCallback = (status: string) => void;
 
 export const startConnection = (token: string, onReceive: ReceiveCallback, setStatus: StatusCallback) => {
     connection = new signalR.HubConnectionBuilder()
-        .withUrl(`https://localhost:5001/chatHub?access_token=${token}`)
+        .withUrl(`http://localhost:5001/chatHub?access_token=${token}`)
         .withAutomaticReconnect()
         .build();
 
-    // Handle receiving messages from backend
     connection.on("ReceiveMessage", (res: { responseCode: number; message: string; data: Message; isSuccess: boolean }) => {
         if (res.isSuccess && res.data) {
             onReceive(res.data);

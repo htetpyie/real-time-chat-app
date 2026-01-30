@@ -4,7 +4,9 @@ import { AuthContext } from "../context/AuthContext";
 import type { JSX } from "react/jsx-runtime";
 
 export const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
-    const { user } = useContext(AuthContext)!;
+    const { user, loading } = useContext(AuthContext)!;
+
+    if (loading) return null;
 
     if (!user) return <Navigate to="/login" replace />;
 
