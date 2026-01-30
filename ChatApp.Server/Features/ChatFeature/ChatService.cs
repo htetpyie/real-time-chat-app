@@ -18,7 +18,11 @@ public class ChatService : IChatService
     {
         try
         {
-            var query = await GetUserListQueryAsync();
+            var isAdmin = await _tokenService.IsAdmin();
+
+            var query = isAdmin
+                ? GetAdminQuery()
+                : GetUserListQueryAsync();
             var userList = await query.Distinct().ToListAsync();
             return ResponseHelper.Success(userList ?? new());
         }
@@ -68,7 +72,11 @@ public class ChatService : IChatService
             if (request == null || request.UserId.IsNullOrWhiteSpace())
                 return ResponseHelper.BadRequest<List<ChatMessageModel>>();
 
-            var query = await ChatMessageQuery(request);
+            var isAdmin = await _tokenService.IsAdmin();
+
+            var query = isAdmin
+                ? await ChatMessageQueryAdmin(request)
+                : await ChatMessageQuery();
 
             if (request.PageNo <= 0) request.PageNo = 1;
             if (request.PageSize <= 0) request.PageSize = 20;
@@ -77,6 +85,7 @@ public class ChatService : IChatService
             var messageList = await query
                 .Skip(skipCount)
                 .Take(request.PageSize)
+                .OrderBy(x => x.SentDate)
                 .ToListAsync();
 
             return ResponseHelper.Success(messageList);
@@ -88,7 +97,34 @@ public class ChatService : IChatService
 
     }
 
-    private async Task<IQueryable<ChatMessageModel>> ChatMessageQuery(ChatHistoryRequestModel request)
+    private async Task<IQueryable<ChatMessageModel>> ChatMessageQuery()
+    {
+
+        var userId = _tokenService.UserId;
+
+        var query = from user in _context.Users
+                    join chat in _context.Chats on user.UserId equals chat.SenderId
+
+                    where (chat.SenderId == userId || chat.ReceiverId == userId) &&
+                    chat.IsDelete == false &&
+                    user.IsDelete == false
+
+                    orderby chat.SentDate descending
+
+                    select new ChatMessageModel
+                    {
+                        ChatId = chat.Id,
+                        Message = chat.Message,
+                        SenderId = chat.SenderId,
+                        ReceiverId = chat.ReceiverId,
+                        SentDate = chat.SentDate,
+                        IsRead = chat.IsRead ?? false,
+                    };
+
+        return query;
+    }
+
+    private async Task<IQueryable<ChatMessageModel>> ChatMessageQueryAdmin(ChatHistoryRequestModel request)
     {
         var query = from user in _context.Users
                     join chat in _context.Chats on user.UserId equals chat.SenderId
@@ -112,40 +148,36 @@ public class ChatService : IChatService
         return query;
     }
 
-    private async Task<IQueryable<ChatUserModel>> GetUserListQueryAsync()
+    private IQueryable<ChatUserModel> GetUserListQueryAsync()
     {
+        return from user in _context.Users
+               join role in _context.Roles on user.RoleId equals role.Id
+               join c in _context.Chats.Where(x => x.IsDelete == false) on user.UserId equals c.SenderId into userChat
+               from chat in userChat.DefaultIfEmpty()
 
-        var isAdmin = await _tokenService.IsAdmin();
-        var tokenUserId = _tokenService.UserId;
+               where role.Name == ConstantRoleName.Admin &&
+                user.IsDelete == false &&
+                role.IsDelete == false
 
-        if (!isAdmin)
-        {
-            return from user in _context.Users
-                   join role in _context.Roles on user.RoleId equals role.Id
-                   join c in _context.Chats.Where(x => x.IsDelete == false) on user.UserId equals c.SenderId into userChat
-                   from chat in userChat.DefaultIfEmpty()
+               orderby chat.SentDate descending
 
-                   where role.Name == ConstantRoleName.Admin &&
-                    user.IsDelete == false &&
-                    role.IsDelete == false
+               select new ChatUserModel
+               {
+                   UserId = user.UserId,
+                   UserName = user.UserName,
+                   LastMessage = _context.Chats
+                    .AsNoTracking()
+                    .Where(x => x.SenderId == user.UserId || x.ReceiverId == user.UserId)
+                    .Select(x => x.Message)
+                    .FirstOrDefault() ?? string.Empty,
+               };
+    }
 
-                   orderby chat.SentDate descending
-
-                   select new ChatUserModel
-                   {
-                       UserId = user.UserId,
-                       UserName = user.UserName,
-                       LastMessage = _context.Chats
-                        .AsNoTracking()
-                        .Where(x => x.SenderId == user.UserId || x.ReceiverId == user.UserId)
-                        .Select(x => x.Message)
-                        .FirstOrDefault() ?? string.Empty,
-                   };
-        }
-
+    private IQueryable<ChatUserModel> GetAdminQuery()
+    {
         var query = from user in _context.Users
-                    join chat in _context.Chats on user.UserId equals chat.SenderId
                     join role in _context.Roles on user.RoleId equals role.Id
+                    join chat in _context.Chats on user.UserId equals chat.SenderId
 
                     where role.Name != ConstantRoleName.Admin &&
                      (chat.SenderId == user.UserId || chat.ReceiverId == user.UserId) &&
