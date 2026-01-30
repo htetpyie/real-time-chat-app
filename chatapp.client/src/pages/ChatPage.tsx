@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { Box} from "@mui/material";
+import { Box } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import { AuthContext } from "../context/AuthContext";
 import { getUserList } from "../api/chatApi";
@@ -13,30 +13,32 @@ const ChatPage: React.FC = () => {
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     useEffect(() => {
-       
-            const loadUsers = async () => {
-                try {
-                    const list = await getUserList();
-                    setUsers(list);
-                    if (list.length > 0) setSelectedUserId(list[0].userId);
-                } catch (err) {
-                    console.error(err);
-                }
-            };
-            loadUsers();
+
+        const loadUsers = async () => {
+            try {
+                const list = await getUserList();
+                setUsers(list);
+                if (list.length > 0) setSelectedUserId(list[0].userId);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        loadUsers();
     }, [user]);
 
     if (!user) return null;
 
     return (
-        <Grid container sx={{ height: "100vh" }}>
-            <Grid item xs={3} sx={{ borderRight: "1px solid #ccc" }}>
+
+        <Grid container spacing={2} sx={{ height: "600px", width:"500px" }}>
+            <Grid size={3} sx={{ borderRight: "1px solid #ccc" }}>
                 <UserList users={users} selectedUserId={selectedUserId} onSelect={setSelectedUserId} />
             </Grid>
-            <Grid item xs={9}>
+            <Grid size={9}>
                 <ChatWindow selectedUserId={selectedUserId} isAdmin={user.isAdmin} />
             </Grid>
         </Grid>
+
     );
 };
 

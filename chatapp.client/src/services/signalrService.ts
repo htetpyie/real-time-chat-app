@@ -1,4 +1,4 @@
-import * as signalR from "@microsoft/signalr";
+﻿import * as signalR from "@microsoft/signalr";
 import type { Message } from "../types/Message";
 
 let connection: signalR.HubConnection;
@@ -6,7 +6,11 @@ let connection: signalR.HubConnection;
 type ReceiveCallback = (message: Message) => void;
 type StatusCallback = (status: string) => void;
 
-export const startConnection = (token: string, onReceive: ReceiveCallback, setStatus: StatusCallback) => {
+export const startConnection = (
+    token: string,
+    onReceive: ReceiveCallback,
+    setStatus: StatusCallback,
+    logout: () => void) => {
     connection = new signalR.HubConnectionBuilder()
         .withUrl(`http://localhost:5001/chatHub?access_token=${token}`)
         .withAutomaticReconnect()
@@ -24,11 +28,27 @@ export const startConnection = (token: string, onReceive: ReceiveCallback, setSt
     connection.onreconnected(() => setStatus("Connected"));
     connection.onclose(() => setStatus("Disconnected"));
 
-    connection.start().then(() => setStatus("Connected")).catch(err => console.error("SignalR start error:", err));
+    connection.start()
+        .then(() => setStatus("Connected"))
+        .catch(err => {
+            console.error("SignalR start error:", err)
+            if (err?.message?.includes("Unauthorized")) {
+                logout();
+            }
+        });
 };
 
-export const sendToAdmin = (message: string) =>
-    connection.invoke("SendMessageToAdmin", message).catch(err => console.error(err));
 
-export const sendToUser = (userId: string, message: string) =>
-    connection.invoke("SendMessageToUser", userId, message).catch(err => console.error(err));
+export const sendMessage = async (receiverId: string, message: string, logout: () => void) => {
+    if (!connection) return;
+
+    try {
+        await connection.invoke("SendMessage", receiverId, message);
+    } catch (err: any) {
+        console.error("SignalR sendMessage error:", err);
+
+        if (err?.message?.includes("Unauthorized")) {
+            logout();
+        }
+    }
+};

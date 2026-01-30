@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import { Box, TextField, Button, Paper, Typography, Stack } from "@mui/material";
 import type { Message } from "../types/Message";
 import { AuthContext } from "../context/AuthContext";
-import { startConnection, sendToAdmin, sendToUser } from "../services/signalrService";
+import { startConnection, sendMessage} from "../services/signalrService";
 import { getHistory } from "../api/chatApi";
 import { ConnectionStatus } from "./ConnectionStatus";
 
@@ -12,7 +12,7 @@ interface ChatWindowProps {
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ selectedUserId, isAdmin }) => {
-    const { user } = useContext(AuthContext)!;
+    const { user, logout } = useContext(AuthContext)!;
     const [messages, setMessages] = useState<Message[]>([]);
     const [status, setStatus] = useState("Connecting");
     const [message, setMessage] = useState("");
@@ -20,7 +20,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ selectedUserId, isAdmin 
 
     useEffect(() => {
         if (!user) return;
-        startConnection(user.token, (msg: Message) => setMessages(prev => [...prev, msg]), setStatus);
+        startConnection(user.token, (msg: Message) => setMessages(prev => [...prev, msg]), setStatus, logout);
     }, [user]);
 
     useEffect(() => {
@@ -45,8 +45,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ selectedUserId, isAdmin 
         if (status !== "Connected") return;
 
         try {
-            if (isAdmin) await sendToUser(selectedUserId, message);
-            else await sendToAdmin(message);
+            await sendMessage(selectedUserId, message,logout);
             setMessage("");
         } catch (err) {
             console.error(err);

@@ -21,7 +21,6 @@ public class ChatService : IChatService
             var query = await GetUserListQueryAsync();
             var userList = await query.Distinct().ToListAsync();
             return ResponseHelper.Success(userList ?? new());
-
         }
         catch (Exception)
         {
@@ -71,8 +70,8 @@ public class ChatService : IChatService
 
             var query = await ChatMessageQuery(request);
 
-            if(request.PageNo <= 0) request.PageNo = 1;
-            if(request.PageSize <= 0) request.PageSize = 20;
+            if (request.PageNo <= 0) request.PageNo = 1;
+            if (request.PageSize <= 0) request.PageSize = 20;
             var skipCount = (request.PageNo - 1) * request.PageSize;
 
             var messageList = await query
@@ -122,13 +121,12 @@ public class ChatService : IChatService
         if (!isAdmin)
         {
             return from user in _context.Users
-                   join chat in _context.Chats on user.UserId equals chat.SenderId
                    join role in _context.Roles on user.RoleId equals role.Id
+                   join c in _context.Chats.Where(x => x.IsDelete == false) on user.UserId equals c.SenderId into userChat
+                   from chat in userChat.DefaultIfEmpty()
 
                    where role.Name == ConstantRoleName.Admin &&
-                    (chat.SenderId == tokenUserId || chat.ReceiverId == tokenUserId) &&
                     user.IsDelete == false &&
-                    chat.IsDelete == false &&
                     role.IsDelete == false
 
                    orderby chat.SentDate descending
@@ -137,7 +135,11 @@ public class ChatService : IChatService
                    {
                        UserId = user.UserId,
                        UserName = user.UserName,
-                       LastMessage = chat.Message,
+                       LastMessage = _context.Chats
+                        .AsNoTracking()
+                        .Where(x => x.SenderId == user.UserId || x.ReceiverId == user.UserId)
+                        .Select(x => x.Message)
+                        .FirstOrDefault() ?? string.Empty,
                    };
         }
 
