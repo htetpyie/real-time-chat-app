@@ -48,7 +48,16 @@ const Login: React.FC = () => {
                     Login
                 </Typography>
 
-                <Box display="flex" flexDirection="column" gap={2}>
+                <Box
+                    component="form"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleLogin();
+                    }}
+                    display="flex"
+                    flexDirection="column"
+                    gap={2}
+                >
                     <TextField
                         label="Username"
                         variant="outlined"
@@ -68,7 +77,7 @@ const Login: React.FC = () => {
                         onChange={(e) => setPassword(e.target.value)}
                     />
 
-                    <Button variant="contained" color="primary" onClick={handleLogin}>
+                    <Button type="submit" variant="contained" color="primary" onClick={handleLogin}>
                         Login
                     </Button>
 

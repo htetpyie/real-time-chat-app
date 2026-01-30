@@ -11,3 +11,9 @@ export interface AuthResponse {
     data: AuthData;
     isSuccess: boolean;
 }
+
+export interface RegisterResponse {
+    responseCode: number;
+    message: string;
+    isSuccess: boolean;
+}
