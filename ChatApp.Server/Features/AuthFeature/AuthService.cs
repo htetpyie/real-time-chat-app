@@ -81,8 +81,8 @@ public class AuthService : IAuthService
         if (!validPassword)
             return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.InvalidCredential);
 
-        var roleId = await _rolService.GetRoleIdByUser(user.UserId);
-        if (roleId.IsNullOrWhiteSpace())
+        var role = await _rolService.GetRoleByUser(user.UserId);
+        if (role.RoleId.IsNullOrWhiteSpace())
             return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.RoleNotFound);
 
         return ResponseHelper.Success(
@@ -90,11 +90,12 @@ public class AuthService : IAuthService
             {
                 UserId = user.UserId,
                 UserName = user.UserName,
+                IsAdmin = role.IsAdmin,
                 Token = GenerateJWTToken(new UserModel
                 {
                     UserId = user.UserId,
                     UserName = user.UserName,
-                    RoleId = roleId,
+                    RoleId = role.RoleId,
                 })
             });
     }

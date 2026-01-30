@@ -6,6 +6,7 @@ namespace ChatApp.Server.Features.AuthFeature;
 
 [ApiController]
 [AllowAnonymous]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     [HttpPost("Login")]

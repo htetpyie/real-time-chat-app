@@ -9,15 +9,19 @@ public class RoleService : IRoleService
         _context = context;
     }
 
-    public async Task<string> GetRoleIdByUser(string userId)
+    public async Task<RoleInfoModel> GetRoleByUser(string userId)
     {
         var query = from role in _context.Roles
                     join user in _context.Users on role.Id equals user.RoleId
                     where user.UserId == userId &&
                         user.IsDelete == false &&
                         role.IsDelete == false
-                    select role.RoleId;
-        return await query.FirstOrDefaultAsync() ?? string.Empty;
+                    select new RoleInfoModel
+                    {
+                        RoleId = role.RoleId,
+                        IsAdmin = role.Name == ConstantRoleName.Admin
+                    };
+        return await query.FirstOrDefaultAsync() ?? new();
     }
 
     public async Task<int> GetUserRoleId()

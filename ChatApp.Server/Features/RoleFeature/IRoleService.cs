@@ -6,7 +6,7 @@ namespace ChatApp.Server.Features.RoleFeature
     {
         Task<int> GetUserRoleId();
         Task<int> GetAdminRoleId();
-        Task<string> GetRoleIdByUser(string userId);
+        Task<RoleInfoModel> GetRoleByUser(string userId);
         Task<bool> IsAdminRoleAsync(string roleId);
     }
 }
