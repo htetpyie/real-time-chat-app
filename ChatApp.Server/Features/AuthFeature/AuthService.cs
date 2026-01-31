@@ -85,12 +85,17 @@ public class AuthService : IAuthService
         if (role.RoleId.IsNullOrWhiteSpace())
             return ResponseHelper.BadRequest<LoginResponseModel>(ConstantResponseMessage.RoleNotFound);
 
+        var userInfo = new UserInfoModel
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            IsAdmin = role.IsAdmin,
+        };
+
         return ResponseHelper.Success(
             new LoginResponseModel
             {
-                UserId = user.UserId,
-                UserName = user.UserName,
-                IsAdmin = role.IsAdmin,
+                User = userInfo,
                 Token = GenerateJWTToken(new UserModel
                 {
                     UserId = user.UserId,

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import { tokenManager } from '@/lib/token';
 import { useAuthStore } from '@/stores/auth-store';
-import { ApiResponse, LoginRequest, RegisterRequest, AuthResponse, User } from '@/types/api';
+import { ApiResponse, LoginRequest, RegisterRequest,RegisterResponse, AuthResponse, User } from '@/types/api';
 
 export function useAuth() {
     const router = useRouter();
@@ -28,13 +28,10 @@ export function useAuth() {
     const login = async (credentials: LoginRequest) => {
         try {
             const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
-
-            const { token, user } = response.data.data;
-
+            const { token, user } = response.data;
             tokenManager.setToken(token);
             tokenManager.setUser(user);
             setUser(user);
-
             router.push('/chat');
             return { success: true };
         } catch (error: any) {
@@ -44,13 +41,10 @@ export function useAuth() {
 
     const register = async (data: RegisterRequest) => {
         try {
-            const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register', data);
-            const { token, user } = response.data.data;
+            const response = await apiClient.post<ApiResponse<RegisterResponse>>('/auth/register', data);
+            const { username } = response.data.data;
 
-            tokenManager.setToken(token);
-            tokenManager.setUser(user);
-            setUser(user);
-            router.push('/chat');
+            router.push('/login');
 
             return { success: true };
         } catch (error: any) {

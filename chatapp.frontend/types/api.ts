@@ -33,6 +33,10 @@ export interface RegisterRequest {
     password: string;
 }
 
+export interface RegisterResponse{
+    username: string;
+}
+
 export interface AuthResponse {
     token: string;
     user: User;
