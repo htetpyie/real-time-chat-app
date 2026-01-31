@@ -4,8 +4,8 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<SpaRoot>..\chatapp.client</SpaRoot>
-		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
+		<SpaRoot>..\chatapp</SpaRoot>
+		<SpaProxyLaunchCommand>next dev</SpaProxyLaunchCommand>
 		<SpaProxyServerUrl>https://localhost:54519</SpaProxyServerUrl>
 	</PropertyGroup>
 
