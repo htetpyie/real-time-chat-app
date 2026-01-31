@@ -110,11 +110,11 @@ builder.Services.AddSwaggerGen(options =>
 #region CORS Ploicy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
+    options.AddPolicy("AllowClient",
         policy =>
         {
             policy
-                .WithOrigins("http://localhost:3000", "http://localhost:5000")
+                .WithOrigins("http://localhost:3000", "https://localhost:3000")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
@@ -123,7 +123,6 @@ builder.Services.AddCors(options =>
 #endregion
 
 builder.Services.AddMemoryCache();
-builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.Configure<AppSettingModel>(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
@@ -150,12 +149,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseCors("AllowClient");
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseExceptionHandler();
-
-app.UseCors("AllowReactApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

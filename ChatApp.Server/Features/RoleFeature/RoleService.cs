@@ -46,6 +46,19 @@ public class RoleService : IRoleService
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string> GetAdminUserId()
+    {
+        var adminRoleid = await GetAdminRoleId();
+
+        return await _context.Users
+            .AsNoTracking()
+            .Where(x =>
+                x.RoleId == adminRoleid &&
+                x.IsDelete == false)
+            .Select(x => x.UserId)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<bool> IsAdminRoleAsync(string roleId)
     {
         var role = await _context.Roles

@@ -9,7 +9,7 @@ public partial class Chat
 
     public string SenderId { get; set; } = null!;
 
-    public string? ReceiverId { get; set; }
+    public string? RecipientId { get; set; }
 
     public string? Message { get; set; }
 

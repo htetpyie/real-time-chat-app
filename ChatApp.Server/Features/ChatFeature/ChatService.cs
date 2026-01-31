@@ -49,7 +49,7 @@ public class ChatService : IChatService
             {
                 Message = request.Message,
                 SenderId = isSenderAdmin ? tokenUser : request.UserId,
-                ReceiverId = isSenderAdmin ? request.UserId : tokenUser,
+                RecipientId = isSenderAdmin ? request.UserId : tokenUser,
                 CreatedDate = DateTime.UtcNow.ToMyanmarDateTime(),
                 IsDelete = false,
             };
@@ -105,7 +105,7 @@ public class ChatService : IChatService
         var query = from user in _context.Users
                     join chat in _context.Chats on user.UserId equals chat.SenderId
 
-                    where (chat.SenderId == userId || chat.ReceiverId == userId) &&
+                    where (chat.SenderId == userId || chat.RecipientId == userId) &&
                     chat.IsDelete == false &&
                     user.IsDelete == false
 
@@ -116,7 +116,7 @@ public class ChatService : IChatService
                         ChatId = chat.Id,
                         Message = chat.Message,
                         SenderId = chat.SenderId,
-                        ReceiverId = chat.ReceiverId,
+                        ReceiverId = chat.RecipientId,
                         SentDate = chat.SentDate,
                         IsRead = chat.IsRead ?? false,
                     };
@@ -129,7 +129,7 @@ public class ChatService : IChatService
         var query = from user in _context.Users
                     join chat in _context.Chats on user.UserId equals chat.SenderId
 
-                    where (chat.SenderId == request.UserId || chat.ReceiverId == request.UserId) &&
+                    where (chat.SenderId == request.UserId || chat.RecipientId == request.UserId) &&
                     chat.IsDelete == false &&
                     user.IsDelete == false
 
@@ -140,7 +140,7 @@ public class ChatService : IChatService
                         ChatId = chat.Id,
                         Message = chat.Message,
                         SenderId = chat.SenderId,
-                        ReceiverId = chat.ReceiverId,
+                        ReceiverId = chat.RecipientId,
                         SentDate = chat.SentDate,
                         IsRead = chat.IsRead ?? false,
                     };
@@ -167,7 +167,7 @@ public class ChatService : IChatService
                    UserName = user.UserName,
                    LastMessage = _context.Chats
                     .AsNoTracking()
-                    .Where(x => x.SenderId == user.UserId || x.ReceiverId == user.UserId)
+                    .Where(x => x.SenderId == user.UserId || x.RecipientId == user.UserId)
                     .Select(x => x.Message)
                     .FirstOrDefault() ?? string.Empty,
                };
@@ -180,7 +180,7 @@ public class ChatService : IChatService
                     join chat in _context.Chats on user.UserId equals chat.SenderId
 
                     where role.Name != ConstantRoleName.Admin &&
-                     (chat.SenderId == user.UserId || chat.ReceiverId == user.UserId) &&
+                     (chat.SenderId == user.UserId || chat.RecipientId == user.UserId) &&
                      user.IsDelete == false &&
                      chat.IsDelete == false &&
                      role.IsDelete == false

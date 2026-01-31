@@ -100,6 +100,7 @@ public class AuthService : IAuthService
                 {
                     UserId = user.UserId,
                     RoleId = role.RoleId,
+                    UserName = user.UserName
                 })
             });
     }

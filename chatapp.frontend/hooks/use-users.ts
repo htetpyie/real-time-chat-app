@@ -14,7 +14,7 @@ export function useUsers() {
 
     const fetchUsers = async () => {
         try {
-            const response = await apiClient.get<ApiResponse<User[]>>('/users');
+            const response = await apiClient.get<ApiResponse<User[]>>('/chat/users');
             setUsers(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch users:', error);

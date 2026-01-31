@@ -19,7 +19,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             >
                 <p className="text-sm">{message.message}</p>
                 <span className="text-xs opacity-70 mt-1 block">
-                    {new Date(message.sentDateString).toLocaleTimeString()}
+                    {message.sentDateString}
                 </span>
             </div>
         </div>
