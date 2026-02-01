@@ -6,15 +6,16 @@ import { useAuthStore } from '@/stores/auth-store';
 import { User } from '@/types/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Headphones, Loader2, ChevronUp } from 'lucide-react';
+import { Send, Headphones, Loader2, ChevronUp, ArrowLeft } from 'lucide-react';
 import { MessageBubble } from './message-bubble';
 
 interface ChatWindowProps {
     recipient: User | null;
     isAdmin: boolean;
+    onBack?: () => void; // For mobile back button
 }
 
-export function ChatWindow({ recipient, isAdmin }: ChatWindowProps) {
+export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
     const user = useAuthStore((state) => state.user);
     const {
         messages,
@@ -38,9 +39,8 @@ export function ChatWindow({ recipient, isAdmin }: ChatWindowProps) {
             loadHistory('admin', 1);
             setShouldScrollToBottom(true);
         }
-    }, [recipient?.userId, isAdmin, loadHistory]); 
+    }, [recipient?.userId, isAdmin, loadHistory]);
 
-    // Auto-scroll to bottom
     useEffect(() => {
         if (shouldScrollToBottom) {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -91,20 +91,32 @@ export function ChatWindow({ recipient, isAdmin }: ChatWindowProps) {
 
     return (
         <div className="flex-1 flex flex-col bg-slate-900 h-full">
-            {/* Header */}
-            <div className="h-16 border-b border-slate-700 flex items-center px-6 bg-slate-800/50">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-medium">
+            {/* Header - Fixed Layout */}
+            <div className="h-16 border-b border-slate-700 flex items-center px-3 bg-slate-800/50">
+                <div className="flex items-center gap-2 w-full min-w-0">
+                    {onBack && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onBack}
+                            className="md:hidden text-slate-400 hover:text-white h-9 w-9 flex-shrink-0"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    )}
+
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-medium flex-shrink-0 text-sm">
                         {isAdmin ? recipient?.userName?.[0].toUpperCase() : 'S'}
                     </div>
-                    <div>
-                        <h3 className="font-medium text-white">
+
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                        <h3 className="font-medium text-white text-sm truncate leading-tight">
                             {isAdmin ? recipient?.userName : 'Support Team'}
                         </h3>
-                        <div className="flex items-center gap-2 text-xs">
-                            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
                             <span className="text-slate-400">
-                                {isConnected ? 'Online' : 'Disconnected'}
+                                {isConnected ? 'Online' : 'Offline'}
                             </span>
                         </div>
                     </div>
@@ -117,7 +129,6 @@ export function ChatWindow({ recipient, isAdmin }: ChatWindowProps) {
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto p-6 space-y-4"
             >
-                {/* Load more button */}
                 {hasMoreMessages && conversationMessages.length > 0 && (
                     <div className="flex justify-center mb-4">
                         <button
@@ -152,6 +163,7 @@ export function ChatWindow({ recipient, isAdmin }: ChatWindowProps) {
                 <div ref={messagesEndRef} />
             </div>
 
+            {/* Input */}
             <div className="h-20 border-t border-slate-700 bg-slate-800/50 p-4">
                 <form onSubmit={handleSend} className="flex gap-3 h-full">
                     <Input

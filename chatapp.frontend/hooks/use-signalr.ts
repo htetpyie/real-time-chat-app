@@ -63,7 +63,6 @@ export function useSignalR() {
                 requestBody
             );
 
-            console.log(response);
             const history = response.data || [];
 
             if (pageNo === 1) {
