@@ -86,9 +86,9 @@ export function UserList({ selectedUser, onSelectUser }: UserListProps) {
                                     <span className="font-medium text-slate-200 truncate">
                                         {user.userName}
                                     </span>
-                                    {user.lastMessageTime && (
+                                    {user.lastSeen && (
                                         <span className="text-xs text-slate-500">
-                                            {new Date(user.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {user.lastSeen}
                                         </span>
                                     )}
                                 </div>

@@ -107,6 +107,7 @@ export function useSignalR() {
                     ...existingUser,
                     lastMessage: message.message,
                     lastMessageTime: message.sentDateString || new Date().toISOString(),
+                    lastSeen: message.sentTimeAgo || new Date().toISOString(),
                     unreadCount: newUnreadCount,
                 }, ...updatedUsers];
             } else if (currentUser.isAdmin) {
