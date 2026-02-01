@@ -164,22 +164,37 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
             </div>
 
             {/* Input */}
-            <div className="h-20 border-t border-slate-700 bg-slate-800/50 p-4">
-                <form onSubmit={handleSend} className="flex gap-3 h-full">
-                    <Input
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        disabled={!isConnected}
-                        className="flex-1"
-                    />
-                    <Button
-                        type="submit"
-                        disabled={!isConnected || !inputMessage.trim()}
-                        className="px-6"
-                    >
-                        <Send className="w-4 h-4" />
-                    </Button>
+            <div className="h-auto min-h-[80px] border-t border-slate-700 bg-slate-800/50 p-4">
+                <form onSubmit={handleSend} className="flex flex-col gap-2">
+                    <div className="flex gap-3">
+                        <div className="flex-1 relative">
+                            <Input
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value.slice(0, 450))} // Hard limit
+                                placeholder="Type a message..."
+                                disabled={!isConnected}
+                                className="w-full pr-16"
+                                maxLength={450}
+                            />
+                            <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${inputMessage.length >= 400 ? 'text-amber-400' : 'text-slate-500'
+                                }`}>
+                                {inputMessage.length}/450
+                            </span>
+                        </div>
+                        <Button
+                            type="submit"
+                            disabled={!isConnected || !inputMessage.trim() || inputMessage.length > 450}
+                            className="px-6"
+                        >
+                            <Send className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    {inputMessage.length >= 400 && (
+                        <p className="text-xs text-amber-400 text-right">
+                            {450 - inputMessage.length} characters remaining
+                        </p>
+                    )}
                 </form>
             </div>
         </div>
