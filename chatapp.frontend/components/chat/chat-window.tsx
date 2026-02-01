@@ -12,7 +12,7 @@ import { MessageBubble } from './message-bubble';
 interface ChatWindowProps {
     recipient: User | null;
     isAdmin: boolean;
-    onBack?: () => void; // For mobile back button
+    onBack?: () => void;
 }
 
 export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
@@ -24,12 +24,20 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
         loadingMessages,
         hasMoreMessages,
         loadHistory,
-        loadMoreMessages
+        loadMoreMessages,
+        users
     } = useSignalR();
     const [inputMessage, setInputMessage] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+
+    const recipientStatus = recipient
+        ? users.find(u => u.userId === recipient.userId)
+        : users.find(u => u.isAdmin);
+    const isRecipientOnline = recipient
+        ? (recipientStatus?.isOnline ?? recipient?.isOnline ?? false)
+        : (recipientStatus?.isOnline ?? isConnected);
 
     useEffect(() => {
         if (recipient?.userId) {
@@ -91,7 +99,7 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
 
     return (
         <div className="flex-1 flex flex-col bg-slate-900 h-full">
-            {/* Header - Fixed Layout */}
+            {/* Header */}
             <div className="h-16 border-b border-slate-700 flex items-center px-3 bg-slate-800/50">
                 <div className="flex items-center gap-2 w-full min-w-0">
                     {onBack && (
@@ -114,10 +122,23 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
                             {isAdmin ? recipient?.userName : 'Support Team'}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs">
-                            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                            <span className="text-slate-400">
-                                {isConnected ? 'Online' : 'Offline'}
-                            </span>
+                            {isAdmin ? (
+                                <>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isRecipientOnline ? 'bg-emerald-500' : 'bg-slate-500'
+                                        }`} />
+                                    <span className={isRecipientOnline ? 'text-emerald-400' : 'text-slate-400'}>
+                                        {isRecipientOnline ? 'Online' : 'Offline'}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isRecipientOnline ? 'bg-emerald-500' : 'bg-slate-500'
+                                        }`} />
+                                    <span className={isRecipientOnline ? 'text-emerald-400' : 'text-slate-400'}>
+                                        {isRecipientOnline ? 'Admin Online' : 'Admin Offline'}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -170,7 +191,7 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
                         <div className="flex-1 relative">
                             <Input
                                 value={inputMessage}
-                                onChange={(e) => setInputMessage(e.target.value.slice(0, 450))} // Hard limit
+                                onChange={(e) => setInputMessage(e.target.value.slice(0, 450))}
                                 placeholder="Type a message..."
                                 disabled={!isConnected}
                                 className="w-full pr-16"
@@ -183,13 +204,12 @@ export function ChatWindow({ recipient, isAdmin, onBack }: ChatWindowProps) {
                         </div>
                         <Button
                             type="submit"
-                            disabled={!isConnected || !inputMessage.trim() || inputMessage.length > 450}
+                            disabled={!isConnected || !inputMessage.trim()}
                             className="px-6"
                         >
                             <Send className="w-4 h-4" />
                         </Button>
                     </div>
-
                     {inputMessage.length >= 400 && (
                         <p className="text-xs text-amber-400 text-right">
                             {450 - inputMessage.length} characters remaining

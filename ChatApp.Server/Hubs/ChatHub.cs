@@ -1,11 +1,5 @@
-﻿using ChatApp.Database.AppDbContextModels;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore.Design.Internal;
-using Shared.Models;
-using System.Collections.Concurrent;
-using System.Data;
-using System.Security.Claims;
 
 namespace ChatApp.Server.Hubs;
 
@@ -14,13 +8,15 @@ public class ChatHub : Hub
 {
     private readonly AppDbContext _dbContext;
     private readonly IRoleService _roleService;
-    private static readonly ConcurrentDictionary<string, string> _userConnections = new();
-    private static readonly ConcurrentDictionary<string, UserPresenceInfo> _onlineUsers = new();
+    private readonly IUserPresenceService _presenceService;
 
-    public ChatHub(AppDbContext dbContext, IRoleService roleService)
+    public ChatHub(AppDbContext dbContext, 
+        IRoleService roleService, 
+        IUserPresenceService presenceService)
     {
         _dbContext = dbContext;
         _roleService = roleService;
+        _presenceService = presenceService;
     }
 
     public override async Task OnConnectedAsync()
@@ -31,14 +27,7 @@ public class ChatHub : Hub
 
         if (!string.IsNullOrEmpty(userId))
         {
-            _userConnections[userId] = Context.ConnectionId;
-            _onlineUsers[userId] = new UserPresenceInfo
-            {
-                Username = userName,
-                Role = roleId,
-                ConnectedAt = DateTime.UtcNow
-            };
-
+            _presenceService.UserConnected(userId, Context.ConnectionId);
             await Clients.Others.SendAsync("UserConnected", userId);
         }
 
@@ -51,8 +40,7 @@ public class ChatHub : Hub
 
         if (!string.IsNullOrEmpty(userId))
         {
-            _userConnections.TryRemove(userId, out _);
-            _onlineUsers.TryRemove(userId, out _);
+            _presenceService.UserDisconnected(userId);
 
             await Clients.Others.SendAsync("UserDisconnected", userId);
             Console.WriteLine($"User disconnected: {userId}");
@@ -72,25 +60,25 @@ public class ChatHub : Hub
             throw new HubException("User not authenticated");
         }
 
-        // Validate: Users can only send to admin
         var isAdmin = await _roleService.IsAdminRoleAsync(senderRoleId);
         var adminUserId = await _roleService.GetAdminUserId();
 
-        // Create message object
         var message = new MessageModel
         {
             Id = Guid.NewGuid().ToString(),
             Message = request.Message,
+            SenderName = senderName,
             SenderId = senderId,
             RecipientId = isAdmin ? request.RecipientId : adminUserId,
-            SentDate = DateTime.UtcNow,
+            SentDate = DateTime.UtcNow.ToMyanmarDateTime(),
             IsRead = false
         };
 
-        if (_userConnections.TryGetValue(message.RecipientId, out var recipientConnectionId))
+        if (_presenceService.GetOnlineUsers().Contains(message.RecipientId))
         {
             await Clients.Users(message.RecipientId)
                 .SendAsync("ReceiveMessage", message);
+            message.IsRead = true;
         }
 
         await Clients.Caller.SendAsync("ReceiveMessage", message);
@@ -102,6 +90,7 @@ public class ChatHub : Hub
             RecipientId = message.RecipientId,
             Message = request.Message,
             SentDate = message.SentDate,
+            IsRead = message.IsRead,
         };
 
         await _dbContext.Chats.AddAsync(chat);
@@ -110,14 +99,16 @@ public class ChatHub : Hub
 
     public async Task GetOnlineUsers()
     {
-        var role = Context.User?.FindFirst(ClaimTypes.Role)?.Value;
+        var roleId = Context.User?.FindFirst(ConstantClaimCode.RoleId)?.Value;
 
-        if (role != "admin")
+        var isAdmin = await _roleService.IsAdminRoleAsync(roleId ?? "");
+
+        if (!isAdmin)
         {
             throw new HubException("Only admins can view online users");
         }
 
-        var users = _onlineUsers.Keys.ToList();
+        var users = _presenceService.GetOnlineUsers();
         await Clients.Caller.SendAsync("OnlineUsersList", users);
     }
 
@@ -143,7 +134,7 @@ public class ChatHub : Hub
         public string RecipientId { get; set; } = string.Empty;
         public DateTime? SentDate { get; set; } = DateTime.UtcNow.ToMyanmarDateTime();
         public string SentDateString => SentDate
-            .ToDateTimeString();
+            .ToDateTimeString();    
         public string SentTimeAgo => SentDate
             .TimeAgo();
         public bool IsRead { get; set; }

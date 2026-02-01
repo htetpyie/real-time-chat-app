@@ -28,4 +28,11 @@ public class ChatController : ControllerBase
         var result = await _chatService.GetChatMessageList(request);
         return Ok(result);
     }
+
+    [HttpPost("mark-as-read")]
+    public async Task<IActionResult> MarkAsRead([FromBody] MarkAsReadRequest request)
+    {
+        var result = await _chatService.MaskAsRead(request);
+        return Ok(result);
+    }
 }

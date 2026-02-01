@@ -3,10 +3,15 @@
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { LogOut, Shield, User, MessagesSquare } from 'lucide-react';
+import { useSignalR } from '../../hooks/use-signalr';
 
 export function TopNavigation() {
     const { user, logout, isAdmin } = useAuth();
-
+    const { disconnect } = useSignalR()
+    const handleLogout = () => {
+        disconnect();
+        logout();
+    };
     return (
         <header className="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
             <div className="flex items-center gap-3">
@@ -40,7 +45,7 @@ export function TopNavigation() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
                 >
                     <LogOut className="w-5 h-5" />

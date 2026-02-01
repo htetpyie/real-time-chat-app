@@ -17,6 +17,8 @@ export function useSignalR() {
     const router = useRouter();
     const connection = useRef<HubConnection | null>(null);
     const isMounted = useRef(true);
+    const isLoadingUsers = useRef(false);
+
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -27,11 +29,18 @@ export function useSignalR() {
     const [currentRecipientId, setCurrentRecipientId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Load users
     const loadUsers = useCallback(async () => {
+        if (isLoadingUsers.current) return;
+
+        isLoadingUsers.current = true;
         setLoadingUsers(true);
+
         try {
             const response = await apiClient.get<ApiResponse<User[]>>('/chat/users');
-            setUsers(response.data || []);
+            if (isMounted.current) {
+                setUsers(response.data || []);
+            }
         } catch (err: any) {
             console.error('Failed to load users:', err);
             if (err.message?.includes('401')) {
@@ -39,15 +48,94 @@ export function useSignalR() {
                 router.push('/login');
             }
         } finally {
-            setLoadingUsers(false);
+            isLoadingUsers.current = false;
+            if (isMounted.current) {
+                setLoadingUsers(false);
+            }
         }
     }, [router]);
+
+    // NEW: Reset unread count for a user
+    const resetUnreadCount = useCallback((userId: string) => {
+        setUsers(prevUsers =>
+            prevUsers.map(u =>
+                u.userId === userId ? { ...u, unreadCount: 0 } : u
+            )
+        );
+    }, []);
+
+    // NEW: Mark messages as read (call API)
+    const markAsRead = useCallback(async (senderId: string) => {
+        try {
+            await apiClient.post('/chat/mark-as-read', { senderId });
+            resetUnreadCount(senderId);
+        } catch (err: any) {
+            console.error('Failed to mark as read:', err);
+        }
+    }, [resetUnreadCount]);
+
+    const updateUserListWithMessage = useCallback((message: Message) => {
+        if (!isMounted.current) return;
+
+        setUsers(prevUsers => {
+            const currentUser = tokenManager.getUser();
+            if (!currentUser) return prevUsers;
+
+            const isMeSender = message.senderId === currentUser.userId;
+            const partnerId = isMeSender ? message.recipientId : message.senderId;
+
+            if (partnerId === currentUser.userId) return prevUsers;
+
+            const partnerName = isMeSender
+                ? 'User'
+                : (message.senderName || 'User');
+
+            const partnerIndex = prevUsers.findIndex(u => u.userId === partnerId);
+
+            if (partnerIndex >= 0) {
+                // Move to top
+                const updatedUsers = [...prevUsers];
+                const [existingUser] = updatedUsers.splice(partnerIndex, 1);
+
+                // Only increment unread if I'm NOT the sender AND I'm NOT currently viewing this chat
+                const isCurrentChat = currentRecipientId === partnerId;
+                const newUnreadCount = (!isMeSender && !isCurrentChat)
+                    ? (existingUser.unreadCount || 0) + 1
+                    : existingUser.unreadCount;
+
+                return [{
+                    ...existingUser,
+                    lastMessage: message.message,
+                    lastMessageTime: message.sentDateString || new Date().toISOString(),
+                    unreadCount: newUnreadCount,
+                }, ...updatedUsers];
+            } else if (currentUser.isAdmin) {
+                // Add new user
+                const newUser: User = {
+                    userId: partnerId,
+                    userName: partnerName,
+                    isOnline: false,
+                    isAdmin: false,
+                    lastMessage: message.message,
+                    lastMessageTime: message.sentDateString || new Date().toISOString(),
+                    unreadCount: 0
+                };
+                return [newUser, ...prevUsers];
+            }
+
+            return prevUsers;
+        });
+    }, [currentRecipientId]);
 
     const loadHistory = useCallback(async (userId: string, pageNo: number = 1) => {
         if (!userId) return;
 
         setLoadingMessages(true);
         setCurrentRecipientId(userId);
+
+        // Reset unread count locally when opening chat
+        resetUnreadCount(userId);
+
         setCurrentPage(pageNo);
 
         try {
@@ -64,12 +152,17 @@ export function useSignalR() {
 
             const history = response.data || [];
 
-            if (pageNo === 1) {
-                setMessages(history);
-            } else {
-                setMessages(prev => [...history, ...prev]);
+            if (isMounted.current) {
+                if (pageNo === 1) {
+                    setMessages(history);
+                } else {
+                    setMessages(prev => [...history, ...prev]);
+                }
+                setHasMoreMessages(history.length === 20);
             }
-            setHasMoreMessages(history.length === 20);
+
+            // Mark messages as read on server
+            await markAsRead(userId);
 
         } catch (err: any) {
             console.error('Failed to load history:', err);
@@ -78,13 +171,14 @@ export function useSignalR() {
                 router.push('/login');
             }
         } finally {
-            setLoadingMessages(false);
+            if (isMounted.current) {
+                setLoadingMessages(false);
+            }
         }
-    }, [router]);
+    }, [router, markAsRead, resetUnreadCount]);
 
     const loadMoreMessages = useCallback(async () => {
         if (!currentRecipientId || !hasMoreMessages || loadingMessages) return;
-
         const nextPage = currentPage + 1;
         await loadHistory(currentRecipientId, nextPage);
         setCurrentPage(nextPage);
@@ -94,7 +188,6 @@ export function useSignalR() {
         isMounted.current = true;
 
         const token = tokenManager.getToken();
-
         if (!token) {
             router.push('/login');
             return;
@@ -120,7 +213,7 @@ export function useSignalR() {
                     return Math.min(1000 * 2 ** retryContext.previousRetryCount, 10000);
                 }
             })
-            .configureLogging(LogLevel.Warning) // Reduced logging
+            .configureLogging(LogLevel.Warning)
             .build();
 
         conn.on('ReceiveMessage', (message: Message) => {
@@ -131,28 +224,18 @@ export function useSignalR() {
                 return [...prev, message];
             });
 
-            setUsers(prev => prev.map(u => {
-                if (u.userId === message.senderId || u.userId === message.recipientId) {
-                    return {
-                        ...u,
-                        lastMessage: message.message,
-                        lastMessageTime: message.sentDateString,
-                        unreadCount: message.recipientId === u.userId ? (u.unreadCount || 0) + 1 : u.unreadCount
-                    };
-                }
-                return u;
-            }));
+            updateUserListWithMessage(message);
         });
 
         conn.on('UserConnected', (userId: string) => {
-            if (!isMounted.current) return;
+            if (!isMounted.current || !userId) return;
             setUsers(prev => prev.map(u =>
                 u.userId === userId ? { ...u, isOnline: true } : u
             ));
         });
 
         conn.on('UserDisconnected', (userId: string) => {
-            if (!isMounted.current) return;
+            if (!isMounted.current || !userId) return;
             setUsers(prev => prev.map(u =>
                 u.userId === userId ? { ...u, isOnline: false } : u
             ));
@@ -160,44 +243,28 @@ export function useSignalR() {
 
         conn.onclose((error) => {
             if (!isMounted.current) return;
-
             setIsConnected(false);
-            if (error?.message?.includes('401') ||
-                error?.message?.includes('Unauthorized')) {
+            if (error?.message?.includes('401')) {
                 tokenManager.removeToken();
                 router.push('/login');
             }
         });
 
-        // Start connection with error suppression for Strict Mode
         const startConnection = async () => {
             try {
                 await conn.start();
-
                 if (!isMounted.current) {
-                    conn.stop(); // Clean up if unmounted during connection
+                    conn.stop();
                     return;
                 }
-
                 setIsConnected(true);
-                loadUsers();
+                await loadUsers();
             } catch (err: any) {
-                // Suppress Strict Mode cancellation error
-                if (err.message?.includes('stopped during negotiation') ||
-                    err.message?.includes('The connection was closed')) {
-                    // This is just React Strict Mode remounting, ignore it
-                    console.log('SignalR: Connection cancelled (Strict Mode)');
-                    return;
-                }
-
+                if (err.message?.includes('stopped during negotiation')) return;
                 if (!isMounted.current) return;
-
-                console.error('SignalR Error:', err.message);
                 if (err.message?.includes('401')) {
                     tokenManager.removeToken();
                     router.push('/login');
-                } else {
-                    setError(err.message);
                 }
             }
         };
@@ -209,7 +276,7 @@ export function useSignalR() {
             isMounted.current = false;
             conn.stop();
         };
-    }, [router, loadUsers]);
+    }, [router, loadUsers, updateUserListWithMessage]);
 
     const sendMessage = useCallback(async (recipientId: string, message: string) => {
         if (connection.current?.state !== 'Connected') {
@@ -229,6 +296,13 @@ export function useSignalR() {
         }
     }, [router]);
 
+    const disconnect = useCallback(() => {
+        if (connection.current) {
+            connection.current.stop();
+        }
+        setIsConnected(false);
+    }, []);
+
     return {
         isConnected,
         messages,
@@ -241,5 +315,8 @@ export function useSignalR() {
         loadHistory,
         loadMoreMessages,
         refreshUsers: loadUsers,
+        resetUnreadCount,
+        markAsRead,
+        disconnect,
     };
 }

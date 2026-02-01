@@ -12,19 +12,24 @@ interface UserListProps {
 }
 
 export function UserList({ selectedUser, onSelectUser }: UserListProps) {
-    const { users, loadingUsers, refreshUsers } = useSignalR();
+    const { users, loadingUsers, refreshUsers, resetUnreadCount, loadHistory } = useSignalR();
     const [search, setSearch] = useState('');
 
     const filteredUsers = users.filter(u =>
         u.userName.toLowerCase().includes(search.toLowerCase())
     );
 
-    // Sort by most recent message first
     const sortedUsers = filteredUsers.sort((a, b) => {
         if (!a.lastMessageTime) return 1;
         if (!b.lastMessageTime) return -1;
         return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
     });
+
+    const handleUserClick = (user: User) => {
+        resetUnreadCount(user.userId); 
+        loadHistory(user.userId, 1); 
+        onSelectUser(user);             
+    };
 
     return (
         <div className="w-80 bg-slate-800 border-r border-slate-700 flex flex-col h-full">
@@ -60,11 +65,11 @@ export function UserList({ selectedUser, onSelectUser }: UserListProps) {
                 ) : (
                     sortedUsers.map((user) => (
                         <button
-                            key={user.userId}  // Changed from id
-                            onClick={() => onSelectUser(user)}
-                            className={`w-full p-4 flex items-center gap-3 hover:bg-slate-700/50 transition-colors border-l-4 ${selectedUser?.userId === user.userId  // Changed from id
-                                    ? 'border-indigo-500 bg-slate-700/30'
-                                    : 'border-transparent'
+                            key={user.userId}
+                            onClick={() => handleUserClick(user)} // Use new handler
+                            className={`w-full p-4 flex items-center gap-3 hover:bg-slate-700/50 transition-colors border-l-4 ${selectedUser?.userId === user.userId
+                                ? 'border-indigo-500 bg-slate-700/30'
+                                : 'border-transparent'
                                 }`}
                         >
                             <div className="relative">
@@ -79,11 +84,11 @@ export function UserList({ selectedUser, onSelectUser }: UserListProps) {
                             <div className="flex-1 text-left min-w-0">
                                 <div className="flex items-center justify-between">
                                     <span className="font-medium text-slate-200 truncate">
-                                        {user.userName} 
+                                        {user.userName}
                                     </span>
                                     {user.lastMessageTime && (
                                         <span className="text-xs text-slate-500">
-                                            {user.lastMessageTime}
+                                            {new Date(user.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     )}
                                 </div>
@@ -92,7 +97,6 @@ export function UserList({ selectedUser, onSelectUser }: UserListProps) {
                                 </p>
                             </div>
 
-                            {/* Unread badge */}
                             {user.unreadCount ? (
                                 <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
                                     {user.unreadCount}

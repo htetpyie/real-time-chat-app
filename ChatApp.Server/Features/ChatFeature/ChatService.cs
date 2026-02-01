@@ -1,9 +1,7 @@
 ﻿using ChatApp.Server.Features.TokenFeature;
-using ChatApp.Server.Features.UserFeature;
 using ChatApp.Server.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Shared.Models;
-using System.Collections.Concurrent;
 using static ChatApp.Server.Hubs.ChatHub;
 namespace ChatApp.Server.Features.ChatFeature;
 
@@ -37,7 +35,7 @@ public class ChatService : IChatService
                 .Distinct()
                 .ToListAsync();
 
-            if(userIds == null || !userIds.Any())
+            if (userIds == null || !userIds.Any())
                 return ResponseHelper.Success(new List<ChatUserModel>());
 
             var users = await _context.Users
@@ -59,7 +57,7 @@ public class ChatService : IChatService
                         .OrderByDescending(m => m.SentDate)
                         .Select(m => m.SentDate)
                         .FirstOrDefault()
-                        
+
                 })
                 .OrderByDescending(u => u.LastMessageTime)
                 .ToListAsync();
@@ -103,6 +101,34 @@ public class ChatService : IChatService
 
     }
 
+    public async Task<ResponseModel<object>> MaskAsRead(MarkAsReadRequest request)
+    {
+        try
+        {
+            var currentUserId = _tokenService.UserId;
+            var messages = await _context.Chats
+                    .Where(m => m.SenderId == request.SenderId
+                      && m.RecipientId == currentUserId
+                      && m.IsRead == false)
+                    .ToListAsync();
+
+            foreach (var msg in messages)
+            {
+                msg.IsRead = true;
+            }
+            _context.Chats.UpdateRange(messages);
+            await _context.SaveChangesAsync();
+
+            return ResponseHelper.Success<object>(null);
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
+    }
+
+
     private async Task<IQueryable<MessageModel>> ChatMessageQuery()
     {
         var userId = _tokenService.UserId;
@@ -128,6 +154,7 @@ public class ChatService : IChatService
 
         return query;
     }
+
 
     private async Task<IQueryable<MessageModel>> ChatMessageQueryAdmin(ChatHistoryRequestModel request)
     {

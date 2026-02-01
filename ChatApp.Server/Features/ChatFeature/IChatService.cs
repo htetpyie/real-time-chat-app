@@ -7,5 +7,6 @@ namespace ChatApp.Server.Features.ChatFeature
     {
         Task<ResponseModel<List<MessageModel>>> GetChatMessageList(ChatHistoryRequestModel request);
         Task<ResponseModel<List<ChatUserModel>>> GetChatUserList();
+        Task<ResponseModel<object>> MaskAsRead(MarkAsReadRequest request);
     }
 }

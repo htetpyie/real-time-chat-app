@@ -22,6 +22,7 @@ export interface Message {
     senderId: string;
     recipientId: string;
     sentDateString: string;
+    sentTimeAgo: string;
     isRead: boolean;
     senderName?: string;
 }

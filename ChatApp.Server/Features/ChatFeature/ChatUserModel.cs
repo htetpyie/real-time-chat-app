@@ -8,5 +8,6 @@ public class ChatUserModel
     public string LastMessage { get; set; } = string.Empty;
     //public DateTime? LastMessageDate { get; set; }
     public DateTime? LastMessageTime { get; set; }
+    public string lastSeen => LastMessageTime.TimeAgo();
     public int UnreadCount { get; set; } = 0;
 }

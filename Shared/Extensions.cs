@@ -38,12 +38,12 @@ public static class Extensions
     public static string ToDateTimeString(this DateTime? date)
     {
         if (date is null) return string.Empty;
-        return date?.ToString("yyyy/MM/dd HH:mm:ss");
+        return date?.ToString("h:mm tt MMM dd");
     }
 
     public static string ToDateTimeString(this DateTime date)
     {
-        return date.ToString("hh:mm:ss:tt MMM dd");
+        return date.ToString("h:mm tt MMM dd");
     }
 
     public static string TimeAgo(this DateTime? dateTime)
