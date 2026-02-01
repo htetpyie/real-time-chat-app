@@ -12,7 +12,7 @@ Built with **.NET 8**, **SignalR**, **Next.js**, and **MySQL**.
 - 🛡 Role-Based Authorization Filter
 - 💬 Real-Time chat between Users and Admin
 - 🟢 Real-Time Online/ Offline status for recipients
-- 📋 Chatted user list for Admin Dashboard
+- 📋 Chatted user list for Admin Dashboard and read/unread count in users
 - 🔍 Search chatted users by username
 - ✏ Message input character limit
 - 🕘 Message History with auto-scroll to latest messages
