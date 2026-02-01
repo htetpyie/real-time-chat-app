@@ -16,6 +16,7 @@ interface ChatHistoryRequest {
 export function useSignalR() {
     const router = useRouter();
     const connection = useRef<HubConnection | null>(null);
+    const isMounted = useRef(true);
     const [isConnected, setIsConnected] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -26,7 +27,6 @@ export function useSignalR() {
     const [currentRecipientId, setCurrentRecipientId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Load users with chat history (for admin) or online users
     const loadUsers = useCallback(async () => {
         setLoadingUsers(true);
         try {
@@ -43,7 +43,6 @@ export function useSignalR() {
         }
     }, [router]);
 
-    // Load message history
     const loadHistory = useCallback(async (userId: string, pageNo: number = 1) => {
         if (!userId) return;
 
@@ -91,8 +90,9 @@ export function useSignalR() {
         setCurrentPage(nextPage);
     }, [currentRecipientId, currentPage, hasMoreMessages, loadingMessages, loadHistory]);
 
-    // Setup SignalR
     useEffect(() => {
+        isMounted.current = true;
+
         const token = tokenManager.getToken();
 
         if (!token) {
@@ -106,12 +106,13 @@ export function useSignalR() {
 
         const conn = new HubConnectionBuilder()
             .withUrl(hubUrl, {
-                accessTokenFactory: () => token,
+                accessTokenFactory: () => tokenManager.getToken() || '',
                 transport: HttpTransportType.WebSockets | HttpTransportType.LongPolling,
             })
             .withAutomaticReconnect({
                 nextRetryDelayInMilliseconds: (retryContext) => {
-                    if (retryContext.retryReason?.message?.includes('401')) {
+                    if (retryContext.retryReason?.message?.includes('401')
+                        || retryContext.retryReason?.message?.includes('Unauthorized')) {
                         tokenManager.removeToken();
                         router.push('/login');
                         return null;
@@ -119,17 +120,17 @@ export function useSignalR() {
                     return Math.min(1000 * 2 ** retryContext.previousRetryCount, 10000);
                 }
             })
-            .configureLogging(LogLevel.Information)
+            .configureLogging(LogLevel.Warning) // Reduced logging
             .build();
 
-        // Real-time new messages
         conn.on('ReceiveMessage', (message: Message) => {
+            if (!isMounted.current) return;
+
             setMessages((prev) => {
                 if (prev.some(m => m.id === message.id)) return prev;
                 return [...prev, message];
             });
 
-            // Update user list with last message preview
             setUsers(prev => prev.map(u => {
                 if (u.userId === message.senderId || u.userId === message.recipientId) {
                     return {
@@ -143,44 +144,69 @@ export function useSignalR() {
             }));
         });
 
-        // User status updates
         conn.on('UserConnected', (userId: string) => {
+            if (!isMounted.current) return;
             setUsers(prev => prev.map(u =>
                 u.userId === userId ? { ...u, isOnline: true } : u
             ));
         });
 
         conn.on('UserDisconnected', (userId: string) => {
+            if (!isMounted.current) return;
             setUsers(prev => prev.map(u =>
                 u.userId === userId ? { ...u, isOnline: false } : u
             ));
         });
 
         conn.onclose((error) => {
+            if (!isMounted.current) return;
+
             setIsConnected(false);
-            if (error?.message?.includes('401')) {
+            if (error?.message?.includes('401') ||
+                error?.message?.includes('Unauthorized')) {
                 tokenManager.removeToken();
                 router.push('/login');
             }
         });
 
-        conn.start()
-            .then(() => {
+        // Start connection with error suppression for Strict Mode
+        const startConnection = async () => {
+            try {
+                await conn.start();
+
+                if (!isMounted.current) {
+                    conn.stop(); // Clean up if unmounted during connection
+                    return;
+                }
+
                 setIsConnected(true);
                 loadUsers();
-            })
-            .catch((err) => {
+            } catch (err: any) {
+                // Suppress Strict Mode cancellation error
+                if (err.message?.includes('stopped during negotiation') ||
+                    err.message?.includes('The connection was closed')) {
+                    // This is just React Strict Mode remounting, ignore it
+                    console.log('SignalR: Connection cancelled (Strict Mode)');
+                    return;
+                }
+
+                if (!isMounted.current) return;
+
+                console.error('SignalR Error:', err.message);
                 if (err.message?.includes('401')) {
                     tokenManager.removeToken();
                     router.push('/login');
                 } else {
                     setError(err.message);
                 }
-            });
+            }
+        };
 
+        startConnection();
         connection.current = conn;
 
         return () => {
+            isMounted.current = false;
             conn.stop();
         };
     }, [router, loadUsers]);

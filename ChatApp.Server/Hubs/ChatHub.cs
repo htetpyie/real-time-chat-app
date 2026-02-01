@@ -141,11 +141,11 @@ public class ChatHub : Hub
         public string SenderId { get; set; } = string.Empty;
         public string SenderName { get; set; } = string.Empty;
         public string RecipientId { get; set; } = string.Empty;
-        public DateTime? SentDate { get; set; }
-        public string SentDateString => DateTime
-            .UtcNow
-            .ToMyanmarDateTime()
+        public DateTime? SentDate { get; set; } = DateTime.UtcNow.ToMyanmarDateTime();
+        public string SentDateString => SentDate
             .ToDateTimeString();
+        public string SentTimeAgo => SentDate
+            .TimeAgo();
         public bool IsRead { get; set; }
     }
 

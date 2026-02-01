@@ -43,7 +43,7 @@ export function useAuth() {
         try {
             const response = await apiClient.post<ApiResponse<RegisterResponse>>('/auth/register', data);
             //router.push('/login');
-            return { success: true, message: "Registration is success! Go back to Sign in."};
+            return { success: true, message: "Registration is success! Sign in with your credential."};
         } catch (error: any) {
             return { success: false, error: error.message };
         }

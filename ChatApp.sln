@@ -7,15 +7,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatApp.Server", "ChatApp.S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatApp.Database", "ChatApp.Database\ChatApp.Database.csproj", "{8017EEB7-8B7E-483D-9C8A-ADA403C27843}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Document", "Document", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
-	ProjectSection(SolutionItems) = preProject
-		chat_app.sql = chat_app.sql
-		README.md = README.md
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{7BCE61AD-846C-4E4C-B8AA-BA20B0E2D884}"
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "chatapp.frontend", "chatapp.frontend\chatapp.frontend.esproj", "{ED6D93A3-3294-6921-F29D-56523BC13A03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		Documents\chat_app.sql = Documents\chat_app.sql
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

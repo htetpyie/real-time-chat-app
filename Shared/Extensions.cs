@@ -43,7 +43,7 @@ public static class Extensions
 
     public static string ToDateTimeString(this DateTime date)
     {
-        return date.ToString("yyyy/MM/dd HH:mm:ss");
+        return date.ToString("hh:mm:ss:tt MMM dd");
     }
 
     public static string TimeAgo(this DateTime? dateTime)
