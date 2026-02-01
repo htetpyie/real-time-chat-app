@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, MessagesSquare } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -37,8 +37,10 @@ export default function LoginPage() {
     return (
         <Card className="w-full max-w-md bg-slate-800 border-slate-700">
             <CardHeader className="space-y-1">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-xl mx-auto mb-4" />
-                <CardTitle className="text-2xl text-center text-white">Welcome back</CardTitle>
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                    <MessagesSquare className="w-7 h-7 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-center text-white">Welcome To Chat App</CardTitle>
                 <CardDescription className="text-center text-slate-400">
                     Sign in to access your messages
                 </CardDescription>

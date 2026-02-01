@@ -54,7 +54,7 @@ public class AuthService : IAuthService
                     ConstantResponseMessage.UserNameExisted);
 
             var userId = await SaveUser(request);
-            return ResponseHelper.Success<RegisterResponseModel>(
+            return ResponseHelper.Success(
                 new RegisterResponseModel { UserId = userId },
                 ConstantResponseMessage.RegisterSuccessfully);
         }

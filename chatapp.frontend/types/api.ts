@@ -38,6 +38,7 @@ export interface RegisterRequest {
 
 export interface RegisterResponse{
     username: string;
+    message: string;
 }
 
 export interface AuthResponse {

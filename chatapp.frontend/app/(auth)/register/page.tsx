@@ -11,6 +11,7 @@ import Link from 'next/link';
 export default function RegisterPage() {
     const { register } = useAuth();
     const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         userName: '',
@@ -21,11 +22,15 @@ export default function RegisterPage() {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setMessage('');
 
         const result = await register(formData);
+        console.log(result);
 
         if (!result.success) {
             setError(result.error || 'Registration failed');
+        } else {
+            setMessage(result.message);
         }
 
         setLoading(false);
@@ -45,8 +50,15 @@ export default function RegisterPage() {
                         </div>
                     )}
 
+                    {message && (
+                        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
+                            {message}
+                        </div>
+                    )}
+
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">Enter username</label>
+                        <label className="text-sm font-medium text-slate-300">Enter Username</label>
                         <Input
                             placeholder="Username"
                             value={formData.userName}

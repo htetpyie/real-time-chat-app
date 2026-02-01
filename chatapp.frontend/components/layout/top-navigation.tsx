@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { LogOut, Shield, User } from 'lucide-react';
+import { LogOut, Shield, User, MessagesSquare } from 'lucide-react';
 
 export function TopNavigation() {
     const { user, logout, isAdmin } = useAuth();
@@ -10,8 +10,11 @@ export function TopNavigation() {
     return (
         <header className="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-lg" />
-                <span className="text-xl font-bold text-white">ChatApp</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <MessagesSquare className="w-5 h-5 text-white" />
+                </div>
+
+                <span className="text-xl font-bold text-white">Chat App</span>
                 {isAdmin && (
                     <span className="flex items-center gap-1 px-2 py-0.5 bg-pink-500/20 text-pink-300 text-xs rounded-full border border-pink-500/30">
                         <Shield className="w-3 h-3" />
