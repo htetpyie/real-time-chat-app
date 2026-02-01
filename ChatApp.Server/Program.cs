@@ -135,6 +135,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddSingleton<IUserPresenceService, UserPresenceService>();
 
 #endregion
 

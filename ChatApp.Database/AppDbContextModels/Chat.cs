@@ -6,6 +6,7 @@ namespace ChatApp.Database.AppDbContextModels;
 public partial class Chat
 {
     public long Id { get; set; }
+    public string ChatId { get; set; }
 
     public string SenderId { get; set; } = null!;
 

@@ -1,18 +1,21 @@
 ﻿using ChatApp.Database.AppDbContextModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Design.Internal;
+using Shared.Models;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Security.Claims;
 
 namespace ChatApp.Server.Hubs;
 
 [Authorize]
-public class ChatHub: Hub
+public class ChatHub : Hub
 {
     private readonly AppDbContext _dbContext;
     private readonly IRoleService _roleService;
     private static readonly ConcurrentDictionary<string, string> _userConnections = new();
-    private static readonly ConcurrentDictionary<string, bool> _onlineUsers = new();
+    private static readonly ConcurrentDictionary<string, UserPresenceInfo> _onlineUsers = new();
 
     public ChatHub(AppDbContext dbContext, IRoleService roleService)
     {
@@ -20,7 +23,7 @@ public class ChatHub: Hub
         _roleService = roleService;
     }
 
-    public override async Task OnConnectedAsync()   
+    public override async Task OnConnectedAsync()
     {
         var userId = Context.UserIdentifier;
         var userName = Context.User?.FindFirst(ConstantClaimCode.UserName)?.Value ?? "Unknown";
@@ -29,19 +32,14 @@ public class ChatHub: Hub
         if (!string.IsNullOrEmpty(userId))
         {
             _userConnections[userId] = Context.ConnectionId;
-            _onlineUsers[userId] = true;
+            _onlineUsers[userId] = new UserPresenceInfo
+            {
+                Username = userName,
+                Role = roleId,
+                ConnectedAt = DateTime.UtcNow
+            };
 
             await Clients.Others.SendAsync("UserConnected", userId);
-
-            // If admin connected, notify them of all online users
-            var isAdmin = await _roleService.IsAdminRoleAsync(roleId);
-            if (isAdmin)
-            {
-                var onlineUsersList = _onlineUsers.Keys.ToList();
-                await Clients.Caller.SendAsync("OnlineUsersList", onlineUsersList);
-            }
-
-            Console.WriteLine($"User connected: {userName} ({userId}) - Role: {roleId}");
         }
 
         await base.OnConnectedAsync();
@@ -57,7 +55,6 @@ public class ChatHub: Hub
             _onlineUsers.TryRemove(userId, out _);
 
             await Clients.Others.SendAsync("UserDisconnected", userId);
-
             Console.WriteLine($"User disconnected: {userId}");
         }
 
@@ -80,8 +77,9 @@ public class ChatHub: Hub
         var adminUserId = await _roleService.GetAdminUserId();
 
         // Create message object
-        var message = new MessageRequest
+        var message = new MessageModel
         {
+            Id = Guid.NewGuid().ToString(),
             Message = request.Message,
             SenderId = senderId,
             RecipientId = isAdmin ? request.RecipientId : adminUserId,
@@ -89,9 +87,9 @@ public class ChatHub: Hub
             IsRead = false
         };
 
-        if (_userConnections.TryGetValue(request.RecipientId, out var recipientConnectionId))
+        if (_userConnections.TryGetValue(message.RecipientId, out var recipientConnectionId))
         {
-            await Clients.Client(recipientConnectionId)
+            await Clients.Users(message.RecipientId)
                 .SendAsync("ReceiveMessage", message);
         }
 
@@ -100,9 +98,10 @@ public class ChatHub: Hub
         var chat = new Chat
         {
             SenderId = senderId,
-            RecipientId = request.RecipientId,
+            ChatId = message.Id,
+            RecipientId = message.RecipientId,
             Message = request.Message,
-            SentDate = DateTime.UtcNow.ToMyanmarDateTime(),
+            SentDate = message.SentDate,
         };
 
         await _dbContext.Chats.AddAsync(chat);
@@ -122,37 +121,12 @@ public class ChatHub: Hub
         await Clients.Caller.SendAsync("OnlineUsersList", users);
     }
 
-    //public async Task SendMessage(string receiverId, string message)
-    //{
-    //    try
-    //    {
-    //        var userId = Context.UserIdentifier;
-    //        if (string.IsNullOrEmpty(userId)) return;
-
-    //        var chat = new Chat
-    //        {
-    //            SenderId = userId,
-    //            RecipientId = receiverId,
-    //            Message = message,
-    //            SentDate = DateTime.UtcNow.ToMyanmarDateTime(),
-    //        };
-
-    //        await _dbContext.Chats.AddAsync(chat);
-    //        await _dbContext.SaveChangesAsync();
-
-    //        await Clients.User(receiverId).SendAsync("ReceiveMessage", new
-    //        {
-    //            responseCode = 200,
-    //            message = "Message sent",
-    //            data = message,
-    //            isSuccess = true
-    //        });
-    //    }
-    //    catch (Exception)
-    //    {
-    //        throw;
-    //    }
-    //}
+    private class UserPresenceInfo
+    {
+        public string Username { get; set; }
+        public string Role { get; set; }
+        public DateTime ConnectedAt { get; set; }
+    }
 
     public class SendMessageRequest
     {
@@ -160,13 +134,14 @@ public class ChatHub: Hub
         public string Message { get; set; } = string.Empty;
     }
 
-    public class MessageRequest
+    public class MessageModel
     {
+        public string Id { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
         public string SenderId { get; set; } = string.Empty;
         public string SenderName { get; set; } = string.Empty;
         public string RecipientId { get; set; } = string.Empty;
-        public DateTime SentDate { get; set; }
+        public DateTime? SentDate { get; set; }
         public string SentDateString => DateTime
             .UtcNow
             .ToMyanmarDateTime()

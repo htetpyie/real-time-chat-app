@@ -11,13 +11,16 @@ export interface User {
     isOnline: boolean;
     isAdmin: boolean;
     lastSeen?: string;
+    lastMessage?: string;
+    lastMessageTime?: string;
+    unreadCount?: number;
 }
 
 export interface Message {
     id: string;
     message: string;
     senderId: string;
-    receiverId: string;
+    recipientId: string;
     sentDateString: string;
     isRead: boolean;
     senderName?: string;

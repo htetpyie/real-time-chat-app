@@ -46,6 +46,25 @@ public static class Extensions
         return date.ToString("yyyy/MM/dd HH:mm:ss");
     }
 
+    public static string TimeAgo(this DateTime? dateTime)
+    {
+        if(dateTime is null)
+            return string.Empty;
+
+        var timeSpan = DateTime.Now - (DateTime)dateTime;
+
+        if (timeSpan.TotalSeconds < 60)
+            return $"{timeSpan.Seconds} second{(timeSpan.Seconds != 1 ? "s" : "")}";
+
+        if (timeSpan.TotalMinutes < 60)
+            return $"{timeSpan.Minutes} minute{(timeSpan.Minutes != 1 ? "s" : "")}";
+
+        if (timeSpan.TotalHours < 24)
+            return $"{timeSpan.Hours} hour{(timeSpan.Hours != 1 ? "s" : "")}";
+
+        return $"{timeSpan.Days} day{(timeSpan.Days != 1 ? "s" : "")}";
+    }
+
     public static string GenerateSalt(int size = 22)
     {
         byte[] saltBytes = new byte[size];

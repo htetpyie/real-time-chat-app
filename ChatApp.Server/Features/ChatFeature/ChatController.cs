@@ -15,6 +15,7 @@ public class ChatController : ControllerBase
     }
 
     [HttpGet("users")]
+    //[AdminAuthorize]
     public async Task<IActionResult> GetUsers()
     {
         var result = await _chatService.GetChatUserList();
