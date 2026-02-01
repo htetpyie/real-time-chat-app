@@ -39,7 +39,7 @@ export default function RegisterPage() {
     return (
         <Card className="w-full max-w-md bg-slate-800 border-slate-700">
             <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-center text-white">Create Account</CardTitle>
+                <CardTitle className="text-2xl text-center text-white">Register Account</CardTitle>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -58,7 +58,7 @@ export default function RegisterPage() {
                     )}
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">Enter Username</label>
+                        <label className="text-sm font-medium text-slate-300"> Username</label>
                         <Input
                             placeholder="Username"
                             value={formData.userName}
@@ -68,7 +68,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-300">Password</label>
+                        <label className="text-sm font-medium text-slate-300"> Password</label>
                         <Input
                             type="password"
                             placeholder="****"
